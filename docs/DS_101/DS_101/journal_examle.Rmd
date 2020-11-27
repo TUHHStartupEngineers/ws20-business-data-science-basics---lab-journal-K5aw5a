@@ -24,7 +24,7 @@ This is an `.Rmd` file. It is plain text with special features. Any time you wri
 
 Last compiled: `r Sys.Date()`
 
-```{r, fig.width=10, fig.height=7}
+```{r, fig.width=5, fig.height=3}
 library(ggplot2)
 library(scales)
 ggplot(diamonds) + 
