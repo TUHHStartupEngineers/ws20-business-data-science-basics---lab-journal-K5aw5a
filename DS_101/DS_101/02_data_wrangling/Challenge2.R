@@ -1,89 +1,77 @@
----
-title: "Journal (reproducible report)"
-author: "Khawla Taleb Bouhemady"
-date: "2020-11-25"
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    collapsed: false
-    number_sections: true
-    toc_depth: 3
-    #code_folding: hide
----
+# Data Science at TUHH ------------------------------------------------------
+# SALES ANALYSIS ----
+#  library(tibble)    --> is a modern re-imagining of the data frame
+#  library(readr)     --> provides a fast and friendly way to read rectangular data like csv
+#  library(dplyr)     --> provides a grammar of data manipulation
+#  library(magrittr)  --> offers a set of operators which make your code more readable (pipe operator)
+#  library(tidyr)     --> provides a set of functions that help you get to tidy data
+#  library(stringr)   --> provides a cohesive set of functions designed to make working with strings as easy as possible
+#  library(ggplot2)   --> graphics
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
-```
-
-
-
-# Setting up the environment and Basic R coding
-
-Last compiled: `r Sys.Date()`
-
-### Chapter 1 : Done
-
-```{r}
-calc_EOQ <- function(D = 1000) {
-  K <- 5
-  h <- 0.25
-  Q <- sqrt(2*D*K/h)
-  Q
-}
-
-calc_EOQ()
-```
-# First Assignment : Bike Sales
-
-```{r plot, fig.width=14, fig.height=7}
-#importing packages
+# 1.0 Load libraries ----
 library(tidyverse)
 library(readxl)
 library(lubridate)
-library("writexl")
-#reading files
-bikes_tbl <- read_excel(path = "DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikes.xlsx")
+
+
+# 2.0 Importing Files ----
+bikes_tbl      <- read_excel(path = "DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikes.xlsx")
 orderlines_tbl <- read_excel("DS_101/DS_101/00_data/01_bike_sales/01_raw_data/orderlines.xlsx")
 bikeshops_tbl  <- read_excel("DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikeshops.xlsx")
-#joining the tabels
+# 3.0 Examining Data ----
+orderlines_tbl
+glimpse(orderlines_tbl)
+glimpse(bikes_tbl)
+glimpse(bikeshops_tbl)
+# 4.0 Joining Data ----
+
 bike_orderlines_joined_tbl <- orderlines_tbl %>%
   left_join(bikes_tbl, by = c("product.id" = "bike.id")) %>%
   left_join(bikeshops_tbl, by = c("customer.id" = "bikeshop.id"))
 glimpse(bike_orderlines_joined_tbl)
-# separating the location to state and city and calculating total price
+# 5.0 Wrangling Data ----
+bike_orderlines_joined_tbl$category
+
+bike_orderlines_joined_tbl %>% 
+  select(category) %>%
+  filter(str_detect(category, "^Mountain")) %>% 
+  unique()
 
 bike_orderlines_wrangled_tbl <- bike_orderlines_joined_tbl %>%
-  separate(col    = location,
-           into   = c("city", "state"),
-           sep    = ", ") %>%
+  separate(col    = category,
+           into   = c("category.1", "category.2", "category.3"),
+           sep    = " - ") %>%
   mutate(total.price = price * quantity) %>%
   select(-...1, -gender) %>%
   select(-ends_with(".id")) %>%
   bind_cols(bike_orderlines_joined_tbl %>% select(order.id)) %>%
-  select(order.id, contains("order"), contains("model"), contains("location"),
+  select(order.id, contains("order"), contains("model"), contains("category"),
          price, quantity, total.price,
          everything()) %>%
   set_names(names(.) %>% str_replace_all("\\.", "_"))
 
 glimpse(bike_orderlines_wrangled_tbl)
 
-#sales by state  - Bar plot
+# 6.0 Business Insights ----
 
-sales_by_state_tbl <- bike_orderlines_wrangled_tbl %>%
-  select(state, total_price) %>%
-  group_by(state) %>% 
+# 6.1 Sales by Year ----
+
+# Step 1 - Manipulate
+sales_by_year_tbl <- bike_orderlines_wrangled_tbl %>%
+  select(order_date, total_price) %>%
+  mutate(year = year(order_date)) %>%
+  group_by(year) %>% 
   summarize(sales = sum(total_price)) %>%
   mutate(sales_text = scales::dollar(sales, big.mark = ".", 
                                      decimal.mark = ",", 
                                      prefix = "", 
                                      suffix = " €"))
-sales_by_state_tbl
+sales_by_year_tbl
 
 # Step 2 - Visualize
 
-sales_by_state_tbl %>%
-  ggplot(aes(x = state, y = sales)) +
+sales_by_year_tbl %>%
+  ggplot(aes(x = year, y = sales)) +
   geom_col(fill = "#2DC6D6") + # Use geom_col for a bar plot
   geom_label(aes(label = sales_text)) + # Adding labels to the bars
   geom_smooth(method = "lm", se = FALSE) + # Adding a trendline
@@ -92,21 +80,24 @@ sales_by_state_tbl %>%
                                                     prefix = "", 
                                                     suffix = " €")) +
   labs(
-    title    = "Revenue by state",
+    title    = "Revenue by year",
     subtitle = "Upward Trend",
     x = "", # Override defaults for x and y
     y = "Revenue"
-  )+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
-# sales by year and location - 12 plots
+  )
 
-sales_by_year_state_tbl <- bike_orderlines_wrangled_tbl %>%
+
+# 6.2 Sales by Year and Category 2 ----
+
+# Step 1 - Manipulate
+sales_by_year_cat_1_tbl <- bike_orderlines_wrangled_tbl %>%
   
   # Select columns and add a year
-  select(order_date, total_price, state) %>%
+  select(order_date, total_price, category_1) %>%
   mutate(year = year(order_date)) %>%
   
   # Group by and summarize year and main catgegory
-  group_by(year, state) %>%
+  group_by(year, category_1) %>%
   summarise(sales = sum(total_price)) %>%
   ungroup() %>%
   
@@ -116,21 +107,21 @@ sales_by_year_state_tbl <- bike_orderlines_wrangled_tbl %>%
                                      prefix = "", 
                                      suffix = " €"))
 
-sales_by_year_state_tbl 
+sales_by_year_cat_1_tbl 
 
 
 
 # Step 2 - Visualize
-sales_by_year_state_tbl %>%
+sales_by_year_cat_1_tbl %>%
   
   # Set up x, y, fill
-  ggplot(aes(x = year, y = sales, fill = state)) +
+  ggplot(aes(x = year, y = sales, fill = category_1)) +
   
   # Geometries
   geom_col() + # Run up to here to get a stacked bar plot
   
   # Facet
-  facet_wrap(~ state) +
+  facet_wrap(~ category_1) +
   
   # Formatting
   scale_y_continuous(labels = scales::dollar_format(big.mark = ".", 
@@ -140,13 +131,23 @@ sales_by_year_state_tbl %>%
   labs(
     title = "Revenue by year and main category",
     subtitle = "Each product category has an upward trend",
-    fill = "State" # Changes the legend name
+    fill = "Main category" # Changes the legend name
   )
 
 
-```
+# 7.0 Writing Files ----
+library("writexl")
 
-# Adding R stuff
+# 7.1 Excel ----
 
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
+bike_orderlines_wrangled_tbl %>%
+  write_xlsx("DS_101/DS_101/00_data/01_bike_sales/02_wrangled_data/bike_orderlines.xlsx")
 
+# 7.2 CSV ----
+bike_orderlines_wrangled_tbl %>% 
+  write_csv("DS_101/DS_101/00_data/01_bike_sales/02_wrangled_data/bike_orderlines.csv")
+
+
+# 7.3 RDS ----
+bike_orderlines_wrangled_tbl %>% 
+  write_rds("DS_101/DS_101/00_data/01_bike_sales/02_wrangled_data/bike_orderlines.rds")
