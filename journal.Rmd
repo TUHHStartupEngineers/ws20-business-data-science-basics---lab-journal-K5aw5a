@@ -138,15 +138,12 @@ sales_by_year_state_tbl %>%
                                                     prefix = "", 
                                                     suffix = " €")) +
   labs(
-    title = "Revenue by year and main category",
-    subtitle = "Each product category has an upward trend",
+    title = "Revenue by year and state",
     fill = "State" # Changes the legend name
   )
 
 
 ```
 
-# Adding R stuff
-
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
+# Second Assignment : API & WEB Scraping
 
