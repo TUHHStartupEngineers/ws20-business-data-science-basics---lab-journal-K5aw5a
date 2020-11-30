@@ -19,7 +19,7 @@ html_home         <- read_html(url_home)
 bike_family_tbl <- html_home %>%
   
   # Get the nodes for the families ...
-  html_nodes( ".catalog-navigation__link > a") %>%
+  html_nodes( ".catalog-navigation__link > div > a") %>%
   # ...and extract the information of the id attribute
   html_attr("href") 
 
