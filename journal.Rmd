@@ -172,7 +172,7 @@ library(glue)      # concatenate strings
 library(stringi)   # character string/text processing
 
 url_home          <- "https://www.rosebikes.com/"
-xopen(url_home) # Open links directly from RStudio to inspect them
+#xopen(url_home) # Open links directly from RStudio to inspect them
 
 # Read in the HTML for the entire webpage
 html_home         <- read_html(url_home)
@@ -180,9 +180,9 @@ html_home         <- read_html(url_home)
 bike_family_tbl <- html_home %>%
 
                  # Get the nodes for the families ...
-                 html_nodes(css =".main-navigation-category-with-tiles__link ")%>%
+                 html_nodes(css=".main-navigation-category-with-tiles__title ")%>%
                  # ...and extract the information of the id attribute
-                 html_attr('href')%>%
+                 html_text()%>%
   
                  discard(.p = ~stringr::str_detect(.x,"Kids|Sale")) %>%
 
@@ -211,7 +211,7 @@ bike_categories_tbl <- html_home %>%
 
            # Going further down the tree and select nodes by class
            # Selecting two classes makes it specific enough
-           html_nodes( css="  .catalog-breadcrumb__list-item  .catalog-breadcrumb__list-item-link") %>%
+           html_nodes( css=".catalog-category-title-with-video__title , .catalog-breadcrumb__list-item-link span , .catalog-navigation__link ") %>%
            html_attr("href")
 
            # Convert vector to tibble
