@@ -227,3 +227,16 @@ bike_categories_tbl <- html_home %>%
 bike_categories_tbl
 
 ```
+# Third Assignment : Data Wrangling
+
+```{r}
+
+# Tidyverse
+library(tidyverse)
+library(vroom)
+
+# Data Table
+library(data.table)
+
+```
+
