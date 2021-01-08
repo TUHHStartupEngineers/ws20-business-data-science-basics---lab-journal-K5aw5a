@@ -1,7 +1,7 @@
 ---
 title: "Journal (reproducible report)"
 author: "Khawla Taleb Bouhemady"
-date: "2020-11-25"
+date: "2021-01-08"
 output:
   html_document:
     toc: true
@@ -300,7 +300,10 @@ us_patents <- combined_data %>%
   summarise(total = sum(n))%>%
   arrange(desc(total))   
 us_top_10 <- us_patents %>% slice(1:10)
-us_top_10
+
+us_top_10_rds = "us_top_10.rds"
+write_rds(us_top_10, us_top_10_rds)
+
 #########################################################################
 # Q2. Recent patent acitivity: What US company had the most patents granted in 2019? 
 #List the top 10 companies with the most new granted patents for 2019.
@@ -314,10 +317,10 @@ tbl_2 <- patent_tbl %>%
             )%>%
           filter(month == 01)%>%
           select(-year, -day)
-setnames(tbl_2, "id", "patent_id")
+#setnames(tbl_2, "id", "patent_id")
 combined_data_2 <- merge(x = tbl_2, y = combined_data, by = "patent_id")
 us_top10_2014_01 <- combined_data_2%>%
-                    filter(type == 2)%>%
+                    filter(country == "US")%>%
                     filter(!is.na(patent_id) || !is.na(organization)) %>%
                     select(organization, patent_id) %>%
                     group_by(organization) %>%
@@ -325,14 +328,16 @@ us_top10_2014_01 <- combined_data_2%>%
                     summarise(total_patents = sum(n))%>%
                     arrange(desc(total_patents)) %>% slice(1:10)  
 us_top10_2014_01_new <- combined_data_2%>%
-                        filter(type == 2 & num_claims == 1)%>%
+                        filter(country == "US" & num_claims == 1)%>%
                         filter(!is.na(patent_id) || !is.na(organization)) %>%
                         select(organization, patent_id) %>%
                         group_by(organization) %>%
                         count(patent_id) %>%   
                         summarise(total_patents = sum(n))%>%
                         arrange(desc(total_patents)) %>% slice(1:10)
-us_top10_2014_01_new
+
+us_top10_2014_01_new_rds = "us_top10_2014_01_new.rds"
+write_rds(us_top10_2014_01_new, us_top10_2014_01_new_rds)
                   
  #########################################################################
 # Q. Innovation in Tech: What is the most innovative tech sector? 
@@ -351,14 +356,40 @@ top10_worldwide_patents <- combined_data_3  %>%
                   arrange(desc(total_patents_worldwide)) %>% slice(1:10)  
 top10_worldwid_top5_upts_ <- top10_worldwide_patents %>% slice(1:5)  
 
-top10_worldwid_top5_upts_
+top10_worldwid_top5_upts__rds = "top10_worldwid_top5_upts_.rds"
+write_rds(top10_worldwid_top5_upts_, top10_worldwid_top5_upts__rds)
+
+
 
 ```
+
+Q1.Patent Dominance: What US company / corporation has the most patents? 
+List the 10 US companies with the most assigned/granted patents.
+```{r}
+read_rds("us_top_10.rds")
+```
+
+Q2. Recent patent acitivity: What US company had the most patents granted in 2019? 
+List the top 10 companies with the most new granted patents for 2019
+```{r}
+read_rds("us_top10_2014_01_new.rds")
+```
+
+Q3. Innovation in Tech: What is the most innovative tech sector? 
+What is the most innovative tech sector? For the top 10 companies (worldwide)
+with the most patents, what are the top 5 USPTO tech main classes?
+
+```{r}
+read_rds("top10_worldwid_top5_upts_.rds")
+
+```
+
+
 # Fourth Assignment : Data Visualization
 
 ### Map the time course of the cumulative Covid-19 cases
 
-```{r, echo = TRUE }
+```{r, echo = TRUE, plot, fig.width=14, fig.height=7 }
 library(tidyverse)
 library(dplyr)
 library(lubridate)
@@ -387,7 +418,7 @@ covid_data_tbl2 %>%
 ```
 ### Visualize the distribution of the mortality rate (deaths / population)
 
-```{r, echo = TRUE}
+```{r, echo = TRUE, plot, fig.width=14, fig.height=7}
 library(tidyverse)
 library(dplyr)
 library(lubridate)
