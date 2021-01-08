@@ -164,50 +164,100 @@ data
 ## WEB Scraping Challenge
 
 ```{r}
-library(tidyverse) # Main Package - Loads dplyr, purrr, etc.
-library(rvest)     # HTML Hacking & Web Scraping
-library(xopen)     # Quickly opening URLs
-library(jsonlite)  # converts JSON files to R objects
-library(glue)      # concatenate strings
-library(stringi)   # character string/text processing
-url_home          <- "https://www.rosebikes.com/"
-#xopen(url_home) # Open links directly from RStudio to inspect them
-# Read in the HTML for the entire webpage
-html_home         <- read_html(url_home)
-bike_family_tbl <- html_home %>%
-                 # Get the nodes for the families ...
-                 html_nodes(css=".main-navigation-category-with-tiles__title ")%>%
-                 # ...and extract the information of the id attribute
-                 html_text()%>%
+library(RSQLite)
+library(tidyverse)
+library(httr)
+library(glue)
+library(jsonlite)
+library(rvest)
+library(stringi)
+library(xopen)
+library(dplyr)
+base_url <- 'https://www.rosebikes.com/bikes'
+# 1. Function to get bike family URLs.
+get_bike_family_urls <- function(base_url) {
   
-                 #discard(.p = ~stringr::str_detect(.x,"Kids|Sale")) %>%
-                 enframe(name = "position", value = "family_class") %>%
-                 # Add a hashtag so we can get nodes of the categories by id (#)
-                 mutate(
-                     family_id = str_glue("#{family_class}")
-                 )
-bike_family_tbl
-family_id_css <- bike_family_tbl %>%
-                    pull(family_class) %>%
-                    stringr::str_c(collapse = ", ")
-family_id_css
-# Extract the urls from the href attribute
-bike_categories_tbl <- html_home %>%
-           # Select nodes by the ids
-          # html_nodes(css = (family_id_css) )%>%
-           # Going further down the tree and select nodes by class
-           # Selecting two classes makes it specific enough
-           html_nodes( css=".catalog-category-title-with-video__title , .catalog-breadcrumb__list-item-link span , .catalog-navigation__link ") %>%
-           html_attr("href")
-           # Convert vector to tibble
-           #enframe(name = "position", value = "subdirectory") %>%
-           # Add the domain, because we will get only the subdirectories
-          #mutate(url =glue("https://www.rosebikes.com{subdirectory}"))%>%
-           # Some categories are listed multiple times.
-           # We only need unique values
-          # distinct(url)
-bike_categories_tbl
-
+  bike_family_urls <- read_html(base_url) %>%
+    html_nodes(css = ".catalog-categories-item > a") %>%
+    html_attr('href') %>%
+    
+    # Convert vector to tibble
+    
+    enframe(name = "position", value = "subdirectory") %>%
+    # Add the domain because we will get only the subdirectories
+    mutate(
+      url = glue('https://www.rosebikes.com{subdirectory}')
+    ) 
+  
+  bike_family_urls <- bike_family_urls %>% 
+    filter(!grepl('sale', url)) %>%
+    filter(!grepl('kids', url))
+  bike_family_urls <- bike_family_urls['url']
+  
+}
+# 2. Function to get bike family URLs.
+get_model_urls <- function(url) {
+  
+  bike_type_url <- read_html(url) %>%
+    html_nodes(css = ".catalog-category-bikes__content > a") %>%
+    html_attr('href') %>%
+    enframe(name = "position", value = "url") %>%
+    mutate(url = glue('https://www.rosebikes.com{url}')) 
+}
+# 3. Function to get the names of each bike 
+get_bike_names <- function(url) {
+  
+  bike_model_name_tbl <- read_html(url) %>%
+    html_nodes(css = ".catalog-category-model__title") %>%
+    html_text() %>%
+    # Convert vector to tibble
+    as_tibble()
+    
+  
+}
+# 4. Function to get the prices of each bike 
+get_bike_prices <- function(url) {
+  
+  bike_model_price_tbl <- read_html(url) %>%
+    html_nodes(css = ".product-tile-price__current-value") %>%
+    html_text() %>%
+    # Convert vector to tibble
+    as_tibble()
+  
+}
+#### APPLYING ABOVE FUNCTIONS
+bike_family_url_tbl <- get_bike_family_urls(base_url)
+bike_family_url_tbl <- bike_family_url_tbl %>%
+  slice(1:3) # Pick 3 categories
+# Create a table with bike model URLS
+bike_model_url_tbl <- tibble()
+for (i in seq_along(bike_family_url_tbl$url)) {
+  
+  web <- toString(bike_family_url_tbl$url[i])
+  bike_model_url_tbl <- bind_rows(bike_model_url_tbl, get_model_urls(web))
+  
+}
+# Create a table with bike model names
+bike_model_names_tbl <- tibble()
+for (i in seq_along(bike_model_url_tbl$url)) {
+  
+  web <- toString(bike_model_url_tbl$url[i])
+  bike_model_names_tbl <- bind_rows(bike_model_names_tbl, get_bike_names(web))
+  
+}
+# Rename cols
+names(bike_model_names_tbl)[1] <- "Bike Model"
+# Create a table with bike prices
+bike_model_prices_tbl <- tibble()
+for (i in seq_along(bike_model_url_tbl$url)) {
+  web <- toString(bike_model_url_tbl$url[i])
+  bike_model_prices_tbl <- bind_rows(bike_model_prices_tbl, get_bike_prices(web))
+}
+# Rename cols
+names(bike_model_prices_tbl)[1] <- "Bike Prices"
+# Join into one table
+table_of_prices <- bind_cols(bike_model_names_tbl,bike_model_prices_tbl)
+knitr::kable(table_of_prices[1:10, ], caption = 'Rosebike.com bicycle prices')
 ```
 # Third Assignment : Data Wrangling
 
