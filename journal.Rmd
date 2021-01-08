@@ -389,7 +389,7 @@ read_rds("top10_worldwid_top5_upts_.rds")
 
 ### Map the time course of the cumulative Covid-19 cases
 
-```{r, echo = TRUE, plot, fig.width=14, fig.height=7 }
+```{r, echo = TRUE}
 library(tidyverse)
 library(dplyr)
 library(lubridate)
@@ -418,7 +418,7 @@ covid_data_tbl2 %>%
 ```
 ### Visualize the distribution of the mortality rate (deaths / population)
 
-```{r, echo = TRUE, plot, fig.width=14, fig.height=7}
+```{r, echo = TRUE}
 library(tidyverse)
 library(dplyr)
 library(lubridate)
